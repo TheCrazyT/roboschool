@@ -24,7 +24,7 @@ if len(sys.argv)==1:
     for n in range(game.players_count):
         subprocess.Popen([sys.executable, sys.argv[0], "pongdemo", "%i"%n])
     gameserver.serve_forever()
-
+    print("\n\nGameserver stops\n\n")
 else:
     player_n = int(sys.argv[2])
 

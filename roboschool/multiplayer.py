@@ -2,6 +2,12 @@ from roboschool.scene_abstract import SingleRobotEmptyScene
 import numpy as np
 import os
 import gym
+if os.name=="nt":
+    from winfifo import mkfifo
+    from winfifo import open
+else:
+    from os import mkfifo
+    from os import open
 
 MULTIPLAYER_FILES_DIR = "/tmp"
 
@@ -40,9 +46,9 @@ class SharedMemoryClientEnv:
         self.player_n = player_n
         self.prefix = MULTIPLAYER_FILES_DIR + "/multiplayer_%s_player%02i" % (game_server_guid, player_n)
         self.sh_pipe_actready_filename = self.prefix + "_actready"
-        self.sh_pipe_actready = os.open(self.sh_pipe_actready_filename, os.O_WRONLY)
+        self.sh_pipe_actready = open(self.sh_pipe_actready_filename, os.O_WRONLY)
         self.sh_pipe_obsready_filename = self.prefix + "_obsready"
-        self.sh_pipe_obsready = open(self.sh_pipe_obsready_filename, 'rt')
+        self.sh_pipe_obsready = open(self.sh_pipe_obsready_filename, os.O_RDONLY)
 
     def shmem_client_send_env_id(self):
         """
@@ -56,7 +62,7 @@ class SharedMemoryClientEnv:
         files at this point, after server created those files based on knowledge it now has,
         and sent "accepted" back here.
         """
-        os.write(self.sh_pipe_actready, (self.spec.id + "\n").encode("ascii"))
+        self.sh_pipe_actready.write((self.spec.id + "\n"))
         check = self.sh_pipe_obsready.readline()[:-1]
         assert(check=="accepted")
         self.sh_obs = np.memmap(self.prefix + "_obs",  mode="r+", shape=self.observation_space.shape, dtype=np.float32)
@@ -69,7 +75,7 @@ class SharedMemoryClientEnv:
         [:] notion means to put data into existing array (shared memory), not create new array.
         """
         self.sh_act[:] = a
-        os.write(self.sh_pipe_actready, b'a\n')
+        self.sh_pipe_actready.write('a\n')
         check = self.sh_pipe_obsready.readline()[:-1]  # It blocks here, until server responds with "t" or "D" (tuple or tuple+done)
         if check=='t':  # tuple
             done = False
@@ -83,7 +89,7 @@ class SharedMemoryClientEnv:
         """
         Reset sends "R" and expects "o" for observations, if it sees something else, like "t", it means server is broken.
         """
-        os.write(self.sh_pipe_actready, b'R\n')
+        self.sh_pipe_actready.write('R\n')
         check = self.sh_pipe_obsready.readline()[:-1]
         if check=='o':
             return self.sh_obs
@@ -97,7 +103,7 @@ class SharedMemoryClientEnv:
         if close:
             return
         if mode=="rgb_array":
-            os.write(self.sh_pipe_actready, b'G\n')
+            self.sh_pipe_actready.write('G\n')
             check = self.sh_pipe_obsready.readline()[:-1]
             if check=='i':
                 return self.sh_rgb
@@ -144,17 +150,17 @@ class SharedMemoryPlayerAgent:
         self.sh_pipe_obsready_filename = self.prefix + "_obsready"
         try: os.unlink(self.sh_pipe_actready_filename)
         except: pass
-        os.mkfifo(self.sh_pipe_actready_filename)
+        mkfifo(self.sh_pipe_actready_filename)
         try: os.unlink(self.sh_pipe_obsready_filename)
         except: pass
-        os.mkfifo(self.sh_pipe_obsready_filename)
+        mkfifo(self.sh_pipe_obsready_filename)
         print("Waiting %s" % self.prefix)
         self.need_reset = True
         self.need_response_tuple = False
 
     def read_env_id_and_create_env(self):
-        self.sh_pipe_actready = open(self.sh_pipe_actready_filename, "rt")
-        self.sh_pipe_obsready = os.open(self.sh_pipe_obsready_filename, os.O_WRONLY)
+        self.sh_pipe_actready = open(self.sh_pipe_actready_filename, os.O_RDONLY)
+        self.sh_pipe_obsready = open(self.sh_pipe_obsready_filename, os.O_WRONLY)
         env_id = self.sh_pipe_actready.readline()[:-1]
         if env_id.find("-v")==-1:
             raise ValueError("multiplayer client %s sent here invalid environment id '%s'" % (self.prefix, env_id))
@@ -172,7 +178,7 @@ class SharedMemoryPlayerAgent:
         self.sh_act = np.memmap(self.prefix + "_act",  mode="w+", shape=self.env.action_space.shape, dtype=np.float32)
         self.sh_rew = np.memmap(self.prefix + "_rew",  mode="w+", shape=(1,), dtype=np.float32)
         self.sh_rgb = np.memmap(self.prefix + "_rgb",  mode="w+", shape=(self.env.unwrapped.VIDEO_H,self.env.unwrapped.VIDEO_W,3), dtype=np.uint8)
-        os.write(self.sh_pipe_obsready, b'accepted\n')
+        self.sh_pipe_obsready.write('accepted\n')
 
     def read_and_apply_action(self):
         """
@@ -194,7 +200,7 @@ class SharedMemoryPlayerAgent:
             elif check=='R':
                 obs = self.env.reset()
                 self.sh_obs[:] = obs
-                os.write(self.sh_pipe_obsready, b'o\n')
+                self.sh_pipe_obsready.write('o\n')
                 self.need_response_tuple = False # Already answered
                 if self.need_reset:
                     self.done = False
@@ -209,7 +215,7 @@ class SharedMemoryPlayerAgent:
                 rgb = self.env.render("rgb_array")
                 assert rgb.shape==self.sh_rgb.shape
                 self.sh_rgb[:] = rgb
-                os.write(self.sh_pipe_obsready, b'i\n')
+                self.sh_pipe_obsready.write('i\n')
                 self.need_response_tuple = False
 
             else:
@@ -234,7 +240,7 @@ class SharedMemoryPlayerAgent:
         #print("%s [%s]" % (self.prefix + "obs", ", ".join(["%+0.2f"%x for x in state])))
         self.sh_rew[0] = reward
         self.need_response_tuple = False
-        os.write(self.sh_pipe_obsready, b't\n' if not done else b'D\n')   # 't' for tuple
+        self.sh_pipe_obsready.write('t\n' if not done else 'D\n')   # 't' for tuple
 
 class SharedMemoryServer:
     """
