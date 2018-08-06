@@ -37,5 +37,6 @@ else:
         pi = Pol1(env.observation_space, env.action_space)
     else:
         pi = Pol2(env.observation_space, env.action_space)
-    play(env, pi, video=False)   # set video = player_n==0 to record video
+    while True:
+        play(env, pi, video=False)   # set video = player_n==0 to record video
 
