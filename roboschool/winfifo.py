@@ -73,6 +73,7 @@ def open(name,options):
         dbg("open %s GENERIC_READ" % (name))
     fileName = PIPE_PREFIX % name
     fileName = fileName.replace("\\","/")
+    fileName = fileName.replace(":","_")
     try:
         overlapped = pywintypes.OVERLAPPED()
         #TODO: this check is more a workaround than a real solution!
@@ -108,6 +109,7 @@ def mkfifo(name):
         #        | win32pipe.PIPE_NOWAIT
         fileName = PIPE_PREFIX % name
         fileName = fileName.replace("\\","/")
+        fileName = fileName.replace(":","_")
         sa = pywintypes.SECURITY_ATTRIBUTES()
         sa.SetSecurityDescriptorDacl ( 1, None, 0 )
         #for i in range(0,1):

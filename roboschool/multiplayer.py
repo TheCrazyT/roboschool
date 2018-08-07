@@ -9,7 +9,14 @@ else:
     from os import mkfifo
     from os import open
 
-MULTIPLAYER_FILES_DIR = "/tmp"
+if os.name=="nt":
+    MULTIPLAYER_FILES_DIR = r"c:\tmp"
+else:
+    MULTIPLAYER_FILES_DIR = "/tmp"
+    
+if not os.path.isdir(MULTIPLAYER_FILES_DIR):
+    raise Exception("Please check that: %s exists." % MULTIPLAYER_FILES_DIR)
+
 
 class SharedMemoryClientEnv:
     """
