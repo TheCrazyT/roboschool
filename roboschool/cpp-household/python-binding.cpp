@@ -157,7 +157,7 @@ shared_ptr<App> app_create_as_needed(const shared_ptr<Household::World>& wref)
 	shared_ptr<App> app = the_app.lock();
 	if (app) {
 		wref->app_ref = app;
-		SimpleRender::opengl_init_existing_app(wref);
+		//SimpleRender::opengl_init_existing_app(wref);
 		return app;
 	}
 	SimpleRender::opengl_init_before_app(wref);
@@ -598,7 +598,7 @@ void sanity_checks()
 		test.load(&buffer, "JPG");
 	}
 	if (test.width() != image.width()) {
-		fprintf(stderr, "Sanity check failed: your Qt4 installation is broken. You can try to fix it by export QT_PLUGIN_PATH=/usr/local/Cellar/qt/4.8.7_2/plugins\n");
+		fprintf(stderr, "Sanity check failed: your Qt installation is broken (test width %d != image width %d) You can try to fix it by export QT_PLUGIN_PATH=<path_to_qt_plugins>\n", test.width(), image.width());
 		exit(1);
 	}
 }

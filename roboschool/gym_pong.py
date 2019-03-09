@@ -14,6 +14,7 @@ class PongScene(Scene):
         Scene.__init__(self, gravity=9.8, timestep=0.0165/4, frame_skip=4)
         self.score_left = 0
         self.score_right = 0
+        self.ball_x = 0
 
     def actor_introduce(self, robot):
         i = robot.player_n - 1
@@ -169,7 +170,7 @@ class RoboschoolPong(gym.Env, SharedMemoryClientEnv):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
 
-    def _reset(self):
+    def reset(self):
         if self.scene is None:
             self.scene = self.create_single_player_scene()
         if not self.scene.multiplayer:
@@ -198,7 +199,7 @@ class RoboschoolPong(gym.Env, SharedMemoryClientEnv):
             self.scene.p1x.set_target_speed( -3*float(a[0]), 0.05, 7 )
             self.scene.p1y.set_target_speed(  3*float(a[1]), 0.05, 7 )
 
-    def _step(self, a):
+    def step(self, a):
         if not self.scene.multiplayer:
             self.apply_action(a)
             self.scene.global_step()
@@ -216,7 +217,7 @@ class RoboschoolPong(gym.Env, SharedMemoryClientEnv):
 
         return state, sum(self.rewards), False, {}
 
-    def _render(self, mode, close):
+    def render(self, mode, close):
         if close:
             return
         if mode=="human":

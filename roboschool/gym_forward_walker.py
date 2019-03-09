@@ -86,8 +86,8 @@ class RoboschoolForwardWalker(SharedMemoryClientEnv):
     foot_ground_object_names = set(["floor"])  # to distinguish ground and other objects
     joints_at_limit_cost = -0.2    # discourage stuck joints
 
-    def _step(self, a):
-        if not self.scene.multiplayer:  # if multiplayer, action first applied to all robots, then global step() called, then _step() for all robots with the same actions
+    def step(self, a):
+        if not self.scene.multiplayer:  # if multiplayer, action first applied to all robots, then global step() called, then step() for all robots with the same actions
             self.apply_action(a)
             self.scene.global_step()
 
