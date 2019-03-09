@@ -74,7 +74,8 @@ ifeq ($(UNAME),Linux)
       BOOST_PYTHON3_POSTFIX = -py$(shell /usr/bin/python3 -c "import sys; print('%i%i' % sys.version_info[:2])")
     else
       $(info Linux, python3, Ubuntu branch)
-      BOOST_PYTHON3_POSTFIX = -py$(shell python3 -c "import sys; print('%i%i' % sys.version_info[:2])")
+      # BOOST_PYTHON3_POSTFIX = -py$(shell python3 -c "import sys; print('%i%i' % sys.version_info[:2])")
+      BOOST_PYTHON3_POSTFIX = 3
     endif
   else
     $(info Linux, python 2 branch)
@@ -99,7 +100,7 @@ ifeq ($(UNAME),Darwin)
   BOOST_PYTHON3_POSTFIX = 3
   BOOST_MT=-mt
   PYTHON = $(shell python3 -c "import sys; print('%i.%i' % sys.version_info[:2])")
-  RPATH =
+  RPATH = -Wl,-undefined,dynamic_lookup
 endif
 
 $(info Link against python $(PYTHON))
@@ -182,7 +183,16 @@ SIM = \
  render-simple.cpp \
  render-simple-primitives.cpp
 
-ifneq ("$(wildcard /usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0)", "")
+ENABLE_HARDWARE_RENDER=1
+ifdef ROBOSCHOOL_DISABLE_HARDWARE_RENDER
+ENABLE_HARDWARE_RENDER=0
+endif
+
+ifeq ("$(wildcard /usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0)", "")
+ENABLE_HARDWARE_RENDER=0
+endif
+
+ifneq ($(ENABLE_HARDWARE_RENDER), 0)
 $(info Hardware render (turn on shadows))
 SIM     += render-ssao.cpp
 CFLAGS  += -DUSE_SSAO
@@ -215,8 +225,8 @@ $(OBJDIRR)/test-tool-qt4.o: .generated/test-tool-qt4.moc
 .generated/test-tool-qt4.moc: test-tool-qt4.cpp
 	$(MOC) -o $@ $<
 
-#../robot-test-tool: $(SIM_R) $(TWND_R)
-#../robot-test-tool_d: $(SIM_D) $(TWND_D)
+../robot-test-tool: $(SIM_R) $(TWND_R)
+../robot-test-tool_d: $(SIM_D) $(TWND_D)
 
 
 ../robot-test-tool: $(SIM_R) $(TWND_R)
