@@ -2,6 +2,7 @@ from roboschool.scene_abstract import SingleRobotEmptyScene
 import numpy as np
 import os
 import gym
+import tempfile
 if os.name=="nt":
     from winfifo import mkfifo
     from winfifo import open
@@ -9,10 +10,7 @@ else:
     from os import mkfifo
     from os import open
 
-if os.name=="nt":
-    MULTIPLAYER_FILES_DIR = r"c:\tmp"
-else:
-    MULTIPLAYER_FILES_DIR = "/tmp"
+MULTIPLAYER_FILES_DIR = tempfile.gettempdir()
     
 if not os.path.isdir(MULTIPLAYER_FILES_DIR):
     raise Exception("Please check that: %s exists." % MULTIPLAYER_FILES_DIR)
